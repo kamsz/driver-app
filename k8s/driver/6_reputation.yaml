@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reputation
+  labels:
+    app: reputation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reputation
+  template:
+    metadata:
+      labels:
+        app: reputation
+    spec:
+      containers:
+        - name: reputation
+          image: kamsz/reputation
+          imagePullPolicy: Always
+          env:
+            - name: DEBUG
+              value: "true"
+            - name: JAEGER_ENDPOINT
+              value: http://jaeger:14268/api/traces
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reputation
+  labels:
+    app: reputation
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: reputation

@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  labels:
+    app: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: kamsz/gateway
+          imagePullPolicy: Always
+          env:
+            - name: DRIVER_ENDPOINT
+              value: http://driver
+            - name: NSQ_ENDPOINT
+              value: nsqd:4150
+            - name: DEBUG
+              value: "true"
+            - name: JAEGER_ENDPOINT
+              value: http://jaeger:14268/api/traces
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  labels:
+    app: gateway
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: gateway

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: driver
+  labels:
+    app: driver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: driver
+  template:
+    metadata:
+      labels:
+        app: driver
+    spec:
+      containers:
+        - name: driver
+          image: kamsz/driver
+          imagePullPolicy: Always
+          env:
+            - name: REPUTATION_ENDPOINT
+              value: http://reputation
+            - name: DEBUG
+              value: "true"
+            - name: JAEGER_ENDPOINT
+              value: http://jaeger:14268/api/traces
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: driver
+  labels:
+    app: driver
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: driver

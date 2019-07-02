@@ -1,0 +1,69 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nsq-init
+spec:
+  template:
+    spec:
+      containers:
+      - name: curl
+        image: byrnedo/alpine-curl
+        command:
+          - curl
+          - -X
+          - POST
+          - http://nsqd:4151/topic/create?topic=location
+      restartPolicy: Never
+  backoffLimit: 4
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nsqadmin
+  labels:
+    app: nsqadmin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nsqadmin
+  template:
+    metadata:
+      labels:
+        app: nsqadmin
+    spec:
+      containers:
+        - name: nsqadmin
+          image: nsqio/nsq
+          imagePullPolicy: IfNotPresent
+          command:
+            - /nsqadmin
+            - --lookupd-http-address=nsqlookupd:4161
+          ports:
+            - name: http
+              containerPort: 4171
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nsqadmin
+  labels:
+    app: nsqadmin
+spec:
+  type: NodePort
+  ports:
+    - port: 4171
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: nsqadmin
